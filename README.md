@@ -1,4 +1,4 @@
-## Crowfy Admin
+## Axelera Admin
 
 Crowfy Admin is a business operations dashboard for client, project, task, quotation, invoice, and payment management.
 

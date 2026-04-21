@@ -1,6 +1,6 @@
 ## Axelera Admin
 
-Crowfy Admin is a business operations dashboard for client, project, task, quotation, invoice, and payment management.
+Axeleara Admin is a business operations dashboard for client, project, task, quotation, invoice, and payment management.
 
 ## Environment Setup
 

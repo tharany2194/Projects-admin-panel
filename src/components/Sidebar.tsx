@@ -8,7 +8,7 @@ import {
   FiUserPlus, FiBarChart2, FiSettings, FiLogOut, FiMenu, FiX,
   FiSun, FiMoon, FiBell, FiCreditCard,
 } from "react-icons/fi";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "./ThemeProvider";
 import WebPushRegistrar from "./WebPushRegistrar";
@@ -94,7 +94,14 @@ export default function Sidebar() {
   const { data: session } = useSession();
   const { theme, toggleTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
+  // Prevent hydration mismatch by only rendering after mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
   if (!session) return null;
 
   const navSections =
@@ -110,9 +117,9 @@ export default function Sidebar() {
     <>
       {/* Logo */}
       <div className="sidebar-logo">
-        <div className="sidebar-logo-icon">C</div>
+        <div className="sidebar-logo-icon">A</div>
         <div>
-          <h1 className="sidebar-title">{session.user?.role === "client" ? "Crowfy Client" : "Crowfy Admin"}</h1>
+          <h1 className="sidebar-title">{session.user?.role === "client" ? "Axelerawebtech Client" : "Axelerawebtech Admin"}</h1>
           <p className="sidebar-subtitle">{session.user?.role || "Admin"}</p>
         </div>
       </div>

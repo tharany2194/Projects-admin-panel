@@ -12,7 +12,7 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("profile");
   const [profile, setProfile] = useState({ name: "", email: "" });
   const [passwords, setPasswords] = useState({ current: "", newPassword: "", confirm: "" });
-  const [business, setBusiness] = useState({ name: "Crowfy", tagline: "Digital Agency", phone: "", email: "", address: "", gstNumber: "", website: "" });
+  const [business, setBusiness] = useState({ name: "Axelerawebtech", tagline: "Digital Agency", phone: "", email: "", address: "", gstNumber: "", website: "" });
   const [invoice, setInvoice] = useState({ prefix: "INV", defaultGst: 18, defaultNotes: "Thank you for your business!", currency: "₹", bankDetails: "" });
   const [saving, setSaving] = useState(false);
 

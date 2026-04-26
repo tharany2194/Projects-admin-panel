@@ -6,16 +6,16 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 export const metadata: Metadata = {
-  title: "Crowfy Admin — Business Management",
+  title: "Axelerawebtech Admin — Business Management",
   description: "Manage clients, projects, invoices and your entire business from one place.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Crowfy Admin",
+    title: "Axelerawebtech Admin",
   },
   icons: {
-    apple: "/crowfy-logo.png",
+    apple: "/axelera-logo.png",
   },
 };
 

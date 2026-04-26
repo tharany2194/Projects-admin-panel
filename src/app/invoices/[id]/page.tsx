@@ -190,12 +190,12 @@ export default function InvoiceDetailPage() {
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 32, paddingBottom: 20, borderBottom: "2px solid var(--border-primary)" }}>
           <div>
-            <img src="/crowfy-logo.png" alt="Crowfy" style={{ height: 40, marginBottom: 16 }} />
+            <img src="/axelera-logo.png" alt="Axelerawebtech" style={{ height: 40, marginBottom: 16 }} />
             <div style={{ fontSize: 24, fontWeight: 800, color: "var(--text-accent)", marginBottom: 4 }}>INVOICE</div>
             <div style={{ fontSize: 14, color: "var(--text-secondary)" }}>{invoice.invoiceNumber}</div>
           </div>
           <div style={{ textAlign: "right", fontSize: 13 }}>
-            <div style={{ fontWeight: 600, fontSize: 18, marginBottom: 8 }}>Crowfy</div>
+            <div style={{ fontWeight: 600, fontSize: 18, marginBottom: 8 }}>Axelerawebtech</div>
             <div style={{ color: "var(--text-secondary)" }}>
               <div>Date: {format(new Date(invoice.invoiceDate), "MMM d, yyyy")}</div>
               {invoice.dueDate && <div>Due: {format(new Date(invoice.dueDate), "MMM d, yyyy")}</div>}

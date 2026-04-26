@@ -41,8 +41,8 @@ export default function LoginPage() {
     <div className="auth-page" style={{ marginLeft: 0 }}>
       <div className="auth-card">
         <div className="auth-logo">
-          <div className="auth-logo-icon">C</div>
-          <span className="auth-logo-text">Crowfy</span>
+          <div className="auth-logo-icon">A</div>
+          <span className="auth-logo-text">Axelerawebtech</span>
         </div>
         <h1 className="auth-title">Welcome Back</h1>
         <p className="auth-subtitle">Sign in to manage your business</p>

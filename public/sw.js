@@ -5,17 +5,17 @@ self.addEventListener("push", (event) => {
     data = event.data ? event.data.json() : {};
   } catch {
     data = {
-      title: "Crowfy Admin",
+      title: "Axelerawebtech Admin",
       body: "You have a new update.",
       url: "/notifications",
     };
   }
 
-  const title = data.title || "Crowfy Admin";
+  const title = data.title || "Axelerawebtech Admin";
   const options = {
     body: data.body || "You have a new update.",
-    icon: "/crowfy-logo.png",
-    badge: "/crowfy-logo.png",
+    icon: "/axelera-logo.png",
+    badge: "/axelera-logo.png",
     data: {
       url: data.url || "/notifications",
     },

@@ -57,8 +57,8 @@ export default function SignupPage() {
     <div className="auth-page" style={{ marginLeft: 0 }}>
       <div className="auth-card">
         <div className="auth-logo">
-          <div className="auth-logo-icon">C</div>
-          <span className="auth-logo-text">Crowfy</span>
+          <div className="auth-logo-icon">A</div>
+          <span className="auth-logo-text">Axelerawebtech</span>
         </div>
         <h1 className="auth-title">Create Account</h1>
         <p className="auth-subtitle">Start managing your business today</p>

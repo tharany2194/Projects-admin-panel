@@ -225,13 +225,13 @@ export default function QuotationDetailPage() {
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "2px solid var(--border-primary)", paddingBottom: 24, marginBottom: 24 }}>
           <div>
-            <img src="/crowfy-logo.png" alt="Crowfy" style={{ height: 40, marginBottom: 16 }} />
+            <img src="/axelera-logo.png" alt="Axelerawebtech" style={{ height: 40, marginBottom: 16 }} />
             <h2 style={{ fontSize: 24, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.5px" }}>QUOTATION</h2>
             <div style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 4 }}>Ref: {quotation.quotationNumber}</div>
           </div>
           <div style={{ textAlign: "right", fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>
-            <div style={{ fontWeight: 700, color: "var(--text-primary)", fontSize: 16, marginBottom: 4 }}>Crowfy Digital</div>
-            <div>contact@crowfy.com</div>
+            <div style={{ fontWeight: 700, color: "var(--text-primary)", fontSize: 16, marginBottom: 4 }}>Axelerawebtech Digital</div>
+            <div>contact@axelerawebtech.com</div>
             <div>+91 98765 43210</div>
             <div>GSTIN: 33AAAAA0000A1Z5</div>
           </div>

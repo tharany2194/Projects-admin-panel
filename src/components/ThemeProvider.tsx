@@ -16,7 +16,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem("crowfy-admin-theme") as Theme;
+    const saved = localStorage.getItem("axelera-admin-theme") as Theme;
     if (saved) setTheme(saved);
     setMounted(true);
   }, []);
@@ -24,15 +24,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (mounted) {
       document.documentElement.setAttribute("data-theme", theme);
-      localStorage.setItem("crowfy-admin-theme", theme);
+      localStorage.setItem("axelera-admin-theme", theme);
     }
   }, [theme, mounted]);
 
   const toggleTheme = () => setTheme((prev) => (prev === "light" ? "dark" : "light"));
 
-  if (!mounted) return null;
-
-  return <ThemeContext.Provider value={{ theme, toggleTheme }}>{children}</ThemeContext.Provider>;
+  return (
+    <div suppressHydrationWarning>
+      <ThemeContext.Provider value={{ theme, toggleTheme }}>{children}</ThemeContext.Provider>
+    </div>
+  );
 }
 
 export const useTheme = () => useContext(ThemeContext);

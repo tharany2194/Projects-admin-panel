@@ -8,8 +8,8 @@ export default function Home() {
 
   if (status === "loading") {
     return (
-      <div className="page-loading">
-        <div className="spinner" style={{ width: 28, height: 28 }} />
+      <div className="page-loading" suppressHydrationWarning>
+        <div className="spinner" style={{ width: 28, height: 28 }} suppressHydrationWarning />
       </div>
     );
   }

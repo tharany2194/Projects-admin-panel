@@ -26,49 +26,79 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    const ext = file.name.split(".").pop() || "bin";
+    // Validate file is not empty
+    const bytes = await file.arrayBuffer();
+    if (bytes.byteLength === 0) {
+      return NextResponse.json({ error: "File is empty" }, { status: 400 });
+    }
+
+    const buffer = Buffer.from(bytes);
+    const ext = file.name.split(".").pop()?.toLowerCase() || "bin";
+    
+    // Normalize content type for PDFs
+    let contentType = file.type;
+    if (ext === "pdf") {
+      contentType = "application/pdf";
+    }
+
     const safeFolder = folder
       .replace(/\\/g, "/")
       .replace(/\.\./g, "")
       .replace(/^\/+/, "")
       .replace(/\/+$/, "");
     const key = `${safeFolder}/${uuidv4()}.${ext}`;
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
 
     let fileUrl = "";
 
     if (hasR2Config) {
-      await r2Client.send(
-        new PutObjectCommand({
-          Bucket: process.env.CLOUDFLARE_R2_BUCKET_NAME,
-          Key: key,
-          Body: buffer,
-          ContentType: file.type,
-        })
-      );
+      try {
+        await r2Client.send(
+          new PutObjectCommand({
+            Bucket: process.env.CLOUDFLARE_R2_BUCKET_NAME,
+            Key: key,
+            Body: buffer,
+            ContentType: contentType,
+          })
+        );
 
-      const publicBase = (process.env.R2_PUBLIC_URL || "").replace(/\/+$/, "");
-      let publicPath = key;
-      if (publicBase.endsWith("/projects") && key.startsWith("projects/")) {
-        publicPath = key.replace(/^projects\//, "");
+        // Construct R2 public URL
+        const r2Endpoint = process.env.CLOUDFLARE_R2_ENDPOINT || "";
+        const r2Bucket = process.env.CLOUDFLARE_R2_BUCKET_NAME || "";
+        
+        // If R2_PUBLIC_URL is set, use it; otherwise construct from endpoint
+        if (process.env.R2_PUBLIC_URL) {
+          const publicBase = process.env.R2_PUBLIC_URL.replace(/\/+$/, "");
+          fileUrl = `${publicBase}/${key}`;
+        } else {
+          // Use R2 endpoint with bucket name to construct the URL
+          const cleanEndpoint = r2Endpoint.replace(/\/+$/, "");
+          fileUrl = `${cleanEndpoint}/${r2Bucket}/${key}`;
+        }
+      } catch (r2Error) {
+        console.error("R2 upload error:", r2Error);
+        throw new Error("Failed to upload to cloud storage");
       }
-      fileUrl = publicBase ? `${publicBase}/${publicPath}` : key;
     } else {
-      const localDir = path.join(process.cwd(), "public", safeFolder);
-      await mkdir(localDir, { recursive: true });
-      const filename = `${uuidv4()}.${ext}`;
-      const localPath = path.join(localDir, filename);
-      await writeFile(localPath, buffer);
-      fileUrl = `/${safeFolder}/${filename}`;
+      // Local file storage fallback
+      try {
+        const localDir = path.join(process.cwd(), "public", safeFolder);
+        await mkdir(localDir, { recursive: true });
+        const filename = `${uuidv4()}.${ext}`;
+        const localPath = path.join(localDir, filename);
+        await writeFile(localPath, buffer);
+        fileUrl = `/${safeFolder}/${filename}`;
+      } catch (localError) {
+        console.error("Local file storage error:", localError);
+        throw new Error("Failed to save file locally");
+      }
     }
 
     return NextResponse.json({
       file: {
         key,
         name: file.name,
-        size: file.size,
-        type: file.type,
+        size: buffer.byteLength,
+        type: contentType,
         url: fileUrl,
         uploadedAt: new Date().toISOString(),
       },

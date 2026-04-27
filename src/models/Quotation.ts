@@ -39,6 +39,10 @@ export interface IQuotation extends Document {
   }>;
   notes: string;
   terms: string;
+  pdfFileName?: string;
+  pdfFileUrl?: string;
+  pdfUploadedBy?: mongoose.Types.ObjectId;
+  pdfUploadedAt?: Date;
   createdBy: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -89,6 +93,10 @@ const QuotationSchema = new Schema<IQuotation>(
     ],
     notes: { type: String, default: "" },
     terms: { type: String, default: "" },
+    pdfFileName: { type: String, default: "" },
+    pdfFileUrl: { type: String, default: "" },
+    pdfUploadedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
+    pdfUploadedAt: { type: Date, default: null },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
   },
   { timestamps: true }

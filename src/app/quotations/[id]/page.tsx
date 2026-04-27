@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useParams } from "next/navigation";
-import { FiArrowLeft, FiPrinter, FiDownload, FiMessageCircle, FiTrash2 } from "react-icons/fi";
+import { FiArrowLeft, FiPrinter, FiDownload, FiMessageCircle, FiTrash2, FiUpload } from "react-icons/fi";
 import { toast } from "react-toastify";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
@@ -37,6 +37,9 @@ interface QuotationDetail {
   workflowHistory?: WorkflowHistoryEntry[];
   notes?: string;
   terms?: string;
+  pdfFileName?: string;
+  pdfFileUrl?: string;
+  pdfUploadedAt?: string;
   clientId?: { name?: string; email?: string; phone?: string; whatsapp?: string; address?: string; gstNumber?: string };
 }
 
@@ -47,6 +50,9 @@ export default function QuotationDetailPage() {
   const [quotation, setQuotation] = useState<QuotationDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const printRef = useRef<HTMLDivElement>(null);
   const isAdmin = session?.user?.role === "admin";
   const isSales = session?.user?.role === "sales";
@@ -130,6 +136,173 @@ export default function QuotationDetailPage() {
     setSaving(false);
   };
 
+  const handlePdfUpload = async (file: File) => {
+    if (!quotation) return;
+    if (quotation.workflowStatus !== "draft") {
+      toast.error("You can only upload PDF for quotations in draft status");
+      return;
+    }
+
+    // Validate file
+    if (!file.type.includes("pdf") && !file.name.toLowerCase().endsWith(".pdf")) {
+      toast.error("Please upload a valid PDF file");
+      return;
+    }
+
+    if (file.size === 0) {
+      toast.error("File is empty");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", "quotations");
+
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!uploadRes.ok) {
+        const errData = await uploadRes.json().catch(() => ({}));
+        throw new Error(errData.error || errData.details || "Upload failed");
+      }
+
+      const uploadData = await uploadRes.json();
+
+      if (!uploadData.file || !uploadData.file.url) {
+        throw new Error("No file URL returned from upload");
+      }
+
+      console.log("PDF uploaded successfully:", uploadData.file);
+
+      // Update quotation with PDF details
+      const updateRes = await fetch(`/api/quotations/${quotation._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pdfFileName: file.name,
+          pdfFileUrl: uploadData.file.url,
+        }),
+      });
+
+      if (!updateRes.ok) {
+        const errData = await updateRes.json().catch(() => ({}));
+        throw new Error(errData.error || "Failed to save PDF details");
+      }
+
+      const updatedData = await updateRes.json();
+      setQuotation(updatedData.quotation || null);
+      toast.success("PDF uploaded successfully");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to upload PDF";
+      console.error("Upload error:", error);
+      toast.error(message);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.includes("pdf")) {
+      toast.error("Please upload a PDF file");
+      return;
+    }
+    handlePdfUpload(file);
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!quotation?.pdfFileUrl) {
+      toast.error("No PDF URL available");
+      return;
+    }
+    
+    try {
+      setDownloading(true);
+      console.log("Starting download for PDF:", quotation.pdfFileUrl);
+      
+      const response = await fetch(`/api/quotations/${quotation._id}/download`, {
+        method: "GET",
+        headers: {
+          "Accept": "application/pdf",
+        },
+      });
+
+      console.log("Download response status:", response.status);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        console.error("Download error response:", errorData);
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
+      // Get content-type to ensure it's PDF
+      const contentType = response.headers.get("content-type");
+      console.log("Response content-type:", contentType);
+      
+      if (!contentType?.includes("application/pdf")) {
+        console.warn("Unexpected content type, but proceeding:", contentType);
+      }
+
+      // Get filename from content-disposition header or use default
+      let filename = `${quotation.quotationNumber}.pdf`;
+      const contentDisposition = response.headers.get("content-disposition");
+      
+      if (contentDisposition) {
+        console.log("Content-Disposition:", contentDisposition);
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=(?:(['"]).*?\1|[^;\n]*)/);
+        if (filenameMatch && filenameMatch[0]) {
+          filename = filenameMatch[0].split("=")[1].replace(/["']/g, "");
+          try {
+            filename = decodeURIComponent(filename);
+          } catch {
+            console.warn("Failed to decode filename, using default");
+          }
+        }
+      }
+
+      // Convert response to blob
+      const blob = await response.blob();
+      console.log("Received blob size:", blob.size, "type:", blob.type);
+
+      if (blob.size === 0) {
+        throw new Error("Downloaded file is empty");
+      }
+
+      // Create blob URL and trigger download
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename;
+      link.style.display = "none";
+      
+      console.log("Triggering download:", filename);
+      
+      // Append to DOM, click, and remove
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up immediately
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
+      }, 100);
+
+      toast.success("PDF downloaded successfully");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to download PDF";
+      console.error("Download error:", error);
+      toast.error(message);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   if (authStatus === "loading" || loading) return <div className="page-loading"><div className="spinner" style={{ width: 28, height: 28 }} /></div>;
   if (!quotation) return <div className="page-loading">Quotation not found</div>;
 
@@ -158,6 +331,35 @@ export default function QuotationDetailPage() {
           {canDeleteQuotation && (
             <button className="btn btn-sm" style={{ border: "1px solid var(--text-danger)", color: "var(--text-danger)", background: "var(--bg-danger)" }} onClick={deleteQuotation} disabled={saving}>
               <FiTrash2 size={13} /> Delete
+            </button>
+          )}
+          {quotation.workflowStatus === "draft" && (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf"
+                onChange={handleFileChange}
+                style={{ display: "none" }}
+              />
+              <button 
+                className="btn btn-sm" 
+                style={{ border: "1px solid var(--text-secondary)", color: "var(--text-secondary)" }}
+                onClick={() => fileInputRef.current?.click()} 
+                disabled={uploading}
+              >
+                <FiUpload size={13} /> {quotation.pdfFileUrl ? "Replace PDF" : "Upload PDF"}
+              </button>
+            </>
+          )}
+          {quotation.pdfFileUrl && (
+            <button 
+              onClick={handleDownloadPdf}
+              disabled={downloading}
+              className="btn btn-sm" 
+              style={{ border: "1px solid var(--text-secondary)", color: "var(--text-secondary)" }}
+            >
+              <FiDownload size={13} /> {downloading ? "Downloading..." : "Download PDF"}
             </button>
           )}
           {client?.whatsapp && <a href={`https://wa.me/${client.whatsapp}?text=${whatsappMsg}`} target="_blank" rel="noopener noreferrer" className="whatsapp-btn btn-sm"><FiMessageCircle size={14} /> Send</a>}
@@ -232,7 +434,7 @@ export default function QuotationDetailPage() {
           <div style={{ textAlign: "right", fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>
             <div style={{ fontWeight: 700, color: "var(--text-primary)", fontSize: 16, marginBottom: 4 }}>Axelerawebtech Digital</div>
             <div>contact@axelerawebtech.com</div>
-            <div>+91 98765 43210</div>
+            <div>+919944314849</div>
             <div>GSTIN: 33AAAAA0000A1Z5</div>
           </div>
         </div>

@@ -64,6 +64,13 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     const updatePayload: Record<string, unknown> = { ...body };
 
+    if (body.pdfFileName || body.pdfFileUrl) {
+      updatePayload.pdfFileName = body.pdfFileName;
+      updatePayload.pdfFileUrl = body.pdfFileUrl;
+      updatePayload.pdfUploadedBy = session.user.id;
+      updatePayload.pdfUploadedAt = new Date();
+    }
+
     if (body.workflowStatus) {
       const fromStatus = (existingQuotation.workflowStatus || "draft") as WorkflowStatus;
       const toStatus = body.workflowStatus as WorkflowStatus;

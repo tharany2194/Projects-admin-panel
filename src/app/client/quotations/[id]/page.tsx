@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useParams } from "next/navigation";
-import { FiArrowLeft, FiPrinter, FiCheckCircle, FiXCircle } from "react-icons/fi";
+import { FiArrowLeft, FiPrinter, FiCheckCircle, FiXCircle, FiDownload } from "react-icons/fi";
 import { format } from "date-fns";
 import { toast } from "react-toastify";
+import { downloadFile } from "@/lib/downloadFile";
 
 interface QuotationDetail {
   _id: string;
@@ -25,6 +26,8 @@ interface QuotationDetail {
   workflowStatus?: "draft" | "review" | "sent" | "approved" | "rejected";
   notes: string;
   terms: string;
+  pdfFileName?: string;
+  pdfFileUrl?: string;
 }
 
 export default function ClientQuotationDetailPage() {
@@ -74,6 +77,15 @@ export default function ClientQuotationDetailPage() {
     setSaving(false);
   };
 
+  const handleDownloadPDF = async () => {
+    if (!quotation?.pdfFileUrl) return;
+    try {
+      await downloadFile(quotation.pdfFileUrl, quotation.pdfFileName || `Quotation-${quotation.quotationNumber}.pdf`);
+    } catch {
+      toast.error("Failed to download PDF");
+    }
+  };
+
   if (status === "loading" || loading) {
     return <div className="page-loading"><div className="spinner" style={{ width: 28, height: 28 }} /></div>;
   }
@@ -110,6 +122,11 @@ export default function ClientQuotationDetailPage() {
           {canRespond ? (
             <button className="btn btn-sm" style={{ background: "var(--bg-danger)", color: "var(--text-danger)", border: "1px solid currentColor" }} onClick={() => updateStatus("rejected")} disabled={saving}>
               <FiXCircle size={14} /> Reject
+            </button>
+          ) : null}
+          {quotation.pdfFileUrl ? (
+            <button className="btn btn-sm" style={{ border: "1px solid var(--text-secondary)", color: "var(--text-secondary)" }} onClick={handleDownloadPDF} disabled={saving}>
+              <FiDownload size={14} /> Download PDF
             </button>
           ) : null}
           <button className="btn btn-secondary btn-sm" onClick={() => window.print()}><FiPrinter size={14} /> Print / PDF</button>

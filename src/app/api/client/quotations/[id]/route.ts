@@ -16,7 +16,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
     const { id } = await params;
     const quotation = await Quotation.findOne({ _id: id, clientId: session.user.clientId })
-      .select("quotationNumber quotationDate validUntil items subtotal discount discountType gstEnabled gstRate cgst sgst total status workflowStatus notes terms createdAt")
+      .select("quotationNumber quotationDate validUntil items subtotal discount discountType gstEnabled gstRate cgst sgst total status workflowStatus notes terms pdfFileName pdfFileUrl createdAt")
       .lean();
 
     if (!quotation) return NextResponse.json({ error: "Quotation not found" }, { status: 404 });
@@ -87,7 +87,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       },
       { new: true }
     )
-      .select("quotationNumber quotationDate validUntil items subtotal discount discountType gstEnabled gstRate cgst sgst total status workflowStatus notes terms createdAt")
+      .select("quotationNumber quotationDate validUntil items subtotal discount discountType gstEnabled gstRate cgst sgst total status workflowStatus notes terms pdfFileName pdfFileUrl createdAt")
       .lean();
 
     if (!quotation) return NextResponse.json({ error: "Quotation not found" }, { status: 404 });

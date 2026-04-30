@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useParams } from "next/navigation";
-import { FiArrowLeft, FiPrinter } from "react-icons/fi";
+import { FiArrowLeft, FiPrinter, FiDownload } from "react-icons/fi";
 import { format } from "date-fns";
+import { toast } from "react-toastify";
+import { downloadFile } from "@/lib/downloadFile";
 
 interface InvoiceDetail {
   _id: string;
@@ -22,6 +24,8 @@ interface InvoiceDetail {
   total: number;
   status: "paid" | "unpaid" | "overdue";
   notes: string;
+  pdfFileName?: string;
+  pdfFileUrl?: string;
   projectId?: { title: string } | null;
 }
 
@@ -52,6 +56,15 @@ export default function ClientInvoiceDetailPage() {
       .catch(() => setLoading(false));
   }, [session, params.id, router]);
 
+  const handleDownloadPDF = async () => {
+    if (!invoice?.pdfFileUrl) return;
+    try {
+      await downloadFile(invoice.pdfFileUrl, invoice.pdfFileName || `Invoice-${invoice.invoiceNumber}.pdf`);
+    } catch {
+      toast.error("Failed to download PDF");
+    }
+  };
+
   if (status === "loading" || loading) {
     return <div className="page-loading"><div className="spinner" style={{ width: 28, height: 28 }} /></div>;
   }
@@ -75,7 +88,14 @@ export default function ClientInvoiceDetailPage() {
             </p>
           </div>
         </div>
-        <button className="btn btn-secondary btn-sm" onClick={() => window.print()}><FiPrinter size={14} /> Print / PDF</button>
+        <div style={{ display: "flex", gap: 8 }}>
+          {invoice.pdfFileUrl ? (handleDownloadPDF
+            <button className="btn btn-sm" style={{ border: "1px solid var(--text-secondary)", color: "var(--text-secondary)" }} onClick={() => downloadFile(invoice.pdfFileUrl, invoice.pdfFileName || `Invoice-${invoice.invoiceNumber}.pdf`)}>
+              <FiDownload size={14} /> Download PDF
+            </button>
+          ) : null}
+          <button className="btn btn-secondary btn-sm" onClick={() => window.print()}><FiPrinter size={14} /> Print / PDF</button>
+        </div>
       </div>
 
       <div className="card printable-document" style={{ maxWidth: 820, margin: "0 auto", padding: 24 }}>

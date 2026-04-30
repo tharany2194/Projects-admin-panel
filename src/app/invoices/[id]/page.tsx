@@ -7,6 +7,7 @@ import { FiArrowLeft, FiDownload, FiMessageCircle, FiMail, FiEdit2, FiPrinter } 
 import { toast } from "react-toastify";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
+import { downloadFile } from "@/lib/downloadFile";
 
 interface InvoiceDetail {
   _id: string;
@@ -32,6 +33,8 @@ interface InvoiceDetail {
     at: string;
   }[];
   notes: string;
+  pdfFileName?: string;
+  pdfFileUrl?: string;
   clientId?: { _id: string; name: string; email: string; phone: string; whatsapp: string; address: string; gstNumber: string };
   projectId?: { title: string };
   createdAt: string;
@@ -66,6 +69,15 @@ export default function InvoiceDetailPage() {
       toast.success("Marked as paid!");
       setInvoice(invoice ? { ...invoice, status: "paid" } : null);
     } catch { toast.error("Failed to update"); }
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!invoice?.pdfFileUrl) return;
+    try {
+      await downloadFile(invoice.pdfFileUrl, invoice.pdfFileName || `Invoice-${invoice.invoiceNumber}.pdf`);
+    } catch {
+      toast.error("Failed to download PDF");
+    }
   };
 
   const workflowStatus = (invoice?.workflowStatus || "draft") as NonNullable<InvoiceDetail["workflowStatus"]>;
@@ -126,6 +138,11 @@ export default function InvoiceDetailPage() {
             </a>
           )}
           {canMarkPaid && <button className="btn btn-primary btn-sm" onClick={markPaid}>Mark as Paid</button>}
+          {invoice.pdfFileUrl ? (
+            <button className="btn btn-sm" style={{ border: "1px solid var(--text-secondary)", color: "var(--text-secondary)" }} onClick={handleDownloadPDF}>
+              <FiDownload size={14} /> Download PDF
+            </button>
+          ) : null}
           <button className="btn btn-secondary btn-sm" onClick={() => window.print()}><FiPrinter size={14} /> Print / PDF</button>
         </div>
       </div>

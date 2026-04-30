@@ -18,6 +18,8 @@ export default function QuotationsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [isPdfUpload, setIsPdfUpload] = useState(false);
 
   const [form, setForm] = useState({
     clientId: "",
@@ -71,12 +73,40 @@ export default function QuotationsPage() {
 
   const handleCreate = async () => {
     if (!form.clientId) { toast.error("Select a client"); return; }
-    if (form.items.some(i => !i.description || i.amount <= 0)) { toast.error("Invalid line items"); return; }
+    if (!isPdfUpload && form.items.some(i => !i.description || i.amount <= 0)) { toast.error("Invalid line items"); return; }
+    if (isPdfUpload && !pdfFile) { toast.error("Please upload a PDF file"); return; }
     setSaving(true);
     try {
       const totals = calculateTotals();
       const payload: any = { ...form, ...totals };
       if (!payload.validUntil) delete payload.validUntil;
+
+      if (isPdfUpload) {
+        payload.items = [{ description: "As per attached PDF quotation", quantity: 1, rate: 0, amount: 0 }];
+        payload.subtotal = 0;
+        payload.cgst = 0;
+        payload.sgst = 0;
+        payload.total = 0;
+        payload.discount = 0;
+        payload.gstEnabled = false;
+      }
+
+      if (isPdfUpload && pdfFile) {
+        const formData = new FormData();
+        formData.append("file", pdfFile);
+        formData.append("folder", "quotations");
+
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!uploadRes.ok) throw new Error("Failed to upload PDF");
+        const uploadData = await uploadRes.json();
+        
+        payload.pdfFileName = pdfFile.name;
+        payload.pdfFileUrl = uploadData.file.url;
+      }
 
       const res = await fetch("/api/quotations", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
@@ -85,6 +115,8 @@ export default function QuotationsPage() {
       const data = await res.json();
       toast.success("Quotation created!");
       setShowCreate(false);
+      setPdfFile(null);
+      setIsPdfUpload(false);
       fetchData();
       router.push(`/quotations/${data.quotation._id}`);
     } catch { toast.error("Failed to create quotation"); }
@@ -214,42 +246,42 @@ export default function QuotationsPage() {
                 {/* Items */}
                 <div style={{ marginBottom: 20 }}>
                   <label className="form-label">Line Items</label>
-                  <div style={{ background: "var(--bg-tertiary)", padding: 16, borderRadius: "var(--radius-md)", display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div style={{ background: "var(--bg-tertiary)", padding: 16, borderRadius: "var(--radius-md)", display: "flex", flexDirection: "column", gap: 12, opacity: isPdfUpload ? 0.6 : 1 }}>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 80px 120px 120px 30px", gap: 12, fontSize: 12, fontWeight: 600, color: "var(--text-tertiary)", textTransform: "uppercase" }}>
                       <div>Description</div><div>Qty</div><div>Rate (₹)</div><div>Amount</div><div></div>
                     </div>
                     {form.items.map((item, index) => (
                       <div key={index} style={{ display: "grid", gridTemplateColumns: "1fr 80px 120px 120px 30px", gap: 12, alignItems: "center" }}>
-                        <input className="form-input" placeholder="Web Development" value={item.description} onChange={(e) => updateItem(index, "description", e.target.value)} />
-                        <input className="form-input" type="number" min="1" value={item.quantity} onChange={(e) => updateItem(index, "quantity", e.target.value)} />
-                        <input className="form-input" type="number" min="0" value={item.rate} onChange={(e) => updateItem(index, "rate", e.target.value)} />
+                        <input className="form-input" placeholder="Web Development" value={item.description} onChange={(e) => updateItem(index, "description", e.target.value)} disabled={isPdfUpload} />
+                        <input className="form-input" type="number" min="1" value={item.quantity} onChange={(e) => updateItem(index, "quantity", e.target.value)} disabled={isPdfUpload} />
+                        <input className="form-input" type="number" min="0" value={item.rate} onChange={(e) => updateItem(index, "rate", e.target.value)} disabled={isPdfUpload} />
                         <div style={{ fontWeight: 600, padding: "0 10px" }}>₹{item.amount.toLocaleString()}</div>
-                        <button className="btn-icon" style={{ color: "var(--text-danger)", width: 30, height: 30 }} onClick={() => removeItem(index)}>✕</button>
+                        <button className="btn-icon" style={{ color: "var(--text-danger)", width: 30, height: 30 }} onClick={() => removeItem(index)} disabled={isPdfUpload}>✕</button>
                       </div>
                     ))}
-                    <button className="btn btn-secondary btn-sm" style={{ width: "fit-content", marginTop: 8 }} onClick={addItem}><FiPlus size={14} /> Add Item</button>
+                    <button className="btn btn-secondary btn-sm" style={{ width: "fit-content", marginTop: 8 }} onClick={addItem} disabled={isPdfUpload}><FiPlus size={14} /> Add Item</button>
                   </div>
                 </div>
 
                 <div className="form-grid">
-                  <div className="form-group">
+                  <div className="form-group" style={{ opacity: isPdfUpload ? 0.6 : 1 }}>
                     <label className="form-label">Tax (GST)</label>
                     <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
-                        <input type="checkbox" checked={form.gstEnabled} onChange={(e) => setForm({ ...form, gstEnabled: e.target.checked })} style={{ width: 16, height: 16 }} /> Enable GST
+                      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: isPdfUpload ? "not-allowed" : "pointer" }}>
+                        <input type="checkbox" checked={form.gstEnabled} onChange={(e) => setForm({ ...form, gstEnabled: e.target.checked })} disabled={isPdfUpload} style={{ width: 16, height: 16 }} /> Enable GST
                       </label>
                       {form.gstEnabled && (
-                        <select className="form-select" style={{ flex: 1 }} value={form.gstRate} onChange={(e) => setForm({ ...form, gstRate: Number(e.target.value) })}>
+                        <select className="form-select" style={{ flex: 1 }} value={form.gstRate} onChange={(e) => setForm({ ...form, gstRate: Number(e.target.value) })} disabled={isPdfUpload}>
                           <option value={5}>5%</option><option value={12}>12%</option><option value={18}>18%</option><option value={28}>28%</option>
                         </select>
                       )}
                     </div>
                   </div>
-                  <div className="form-group">
+                  <div className="form-group" style={{ opacity: isPdfUpload ? 0.6 : 1 }}>
                     <label className="form-label">Discount</label>
                     <div style={{ display: "flex", gap: 10 }}>
-                      <input className="form-input" type="number" value={form.discount} onChange={(e) => setForm({ ...form, discount: Number(e.target.value) })} style={{ flex: 1 }} />
-                      <select className="form-select" style={{ width: 100 }} value={form.discountType} onChange={(e) => setForm({ ...form, discountType: e.target.value })}>
+                      <input className="form-input" type="number" value={form.discount} onChange={(e) => setForm({ ...form, discount: Number(e.target.value) })} disabled={isPdfUpload} style={{ flex: 1 }} />
+                      <select className="form-select" style={{ width: 100 }} value={form.discountType} onChange={(e) => setForm({ ...form, discountType: e.target.value })} disabled={isPdfUpload}>
                         <option value="percentage">%</option><option value="fixed">₹</option>
                       </select>
                     </div>
@@ -260,9 +292,37 @@ export default function QuotationsPage() {
                   <label className="form-label">Terms & Conditions</label>
                   <textarea className="form-textarea" rows={3} value={form.terms} onChange={(e) => setForm({ ...form, terms: e.target.value })} />
                 </div>
+                <div className="form-group">
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontWeight: 600, padding: "8px 0", borderTop: "1px solid var(--border-primary)" }}>
+                    <input 
+                      type="checkbox" 
+                      checked={isPdfUpload} 
+                      onChange={(e) => {
+                        setIsPdfUpload(e.target.checked);
+                        if (!e.target.checked) setPdfFile(null);
+                      }} 
+                      style={{ width: 16, height: 16 }} 
+                    />
+                    Upload PDF Quotation instead of using line items
+                  </label>
+                </div>
+
+                {isPdfUpload && (
+                  <div className="form-group">
+                    <label className="form-label">Upload Quotation PDF *</label>
+                    <input 
+                      type="file" 
+                      accept=".pdf" 
+                      onChange={(e) => setPdfFile(e.target.files?.[0] || null)}
+                      className="form-input" 
+                      style={{ padding: "8px" }}
+                    />
+                    {pdfFile && <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4 }}>Selected: {pdfFile.name}</div>}
+                  </div>
+                )}
               </div>
               <div className="modal-footer" style={{ justifyContent: "space-between" }}>
-                <div style={{ fontSize: 18, fontWeight: 700 }}>Total: <span style={{ color: "var(--text-accent)" }}>₹{calculateTotals().total.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</span></div>
+                <div style={{ fontSize: 18, fontWeight: 700 }}>Total: <span style={{ color: "var(--text-accent)" }}>₹{isPdfUpload ? "0" : calculateTotals().total.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</span></div>
                 <div style={{ display: "flex", gap: 10 }}>
                   <button className="btn btn-secondary" onClick={() => setShowCreate(false)}>Cancel</button>
                   <button className="btn btn-primary" onClick={handleCreate} disabled={saving}>

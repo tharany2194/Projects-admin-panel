@@ -7,6 +7,7 @@ import { FiArrowLeft, FiPrinter, FiDownload, FiMessageCircle, FiTrash2 } from "r
 import { toast } from "react-toastify";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
+import { downloadFile } from "@/lib/downloadFile";
 
 type WorkflowStatus = "draft" | "review" | "sent" | "approved" | "rejected";
 
@@ -37,6 +38,8 @@ interface QuotationDetail {
   workflowHistory?: WorkflowHistoryEntry[];
   notes?: string;
   terms?: string;
+  pdfFileName?: string;
+  pdfFileUrl?: string;
   clientId?: { name?: string; email?: string; phone?: string; whatsapp?: string; address?: string; gstNumber?: string };
 }
 
@@ -74,6 +77,15 @@ export default function QuotationDetailPage() {
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!quotation?.pdfFileUrl) return;
+    try {
+      await downloadFile(quotation.pdfFileUrl, quotation.pdfFileName || `Quotation-${quotation.quotationNumber}.pdf`);
+    } catch {
+      toast.error("Failed to download PDF");
+    }
   };
 
   const workflowStatus: WorkflowStatus = quotation?.workflowStatus || "draft";
@@ -161,6 +173,11 @@ export default function QuotationDetailPage() {
             </button>
           )}
           {client?.whatsapp && <a href={`https://wa.me/${client.whatsapp}?text=${whatsappMsg}`} target="_blank" rel="noopener noreferrer" className="whatsapp-btn btn-sm"><FiMessageCircle size={14} /> Send</a>}
+          {quotation.pdfFileUrl ? (
+            <button className="btn btn-sm" style={{ border: "1px solid var(--text-secondary)", color: "var(--text-secondary)" }} onClick={handleDownloadPDF} disabled={saving}>
+              <FiDownload size={14} /> Download PDF
+            </button>
+          ) : null}
           <button className="btn btn-secondary btn-sm" onClick={handlePrint}><FiPrinter size={14} /> Print / PDF</button>
         </div>
       </div>
@@ -232,7 +249,7 @@ export default function QuotationDetailPage() {
           <div style={{ textAlign: "right", fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>
             <div style={{ fontWeight: 700, color: "var(--text-primary)", fontSize: 16, marginBottom: 4 }}>Axelerawebtech Digital</div>
             <div>contact@axelerawebtech.com</div>
-            <div>+91 98765 43210</div>
+            <div>+91 9944314849</div>
             <div>GSTIN: 33AAAAA0000A1Z5</div>
           </div>
         </div>

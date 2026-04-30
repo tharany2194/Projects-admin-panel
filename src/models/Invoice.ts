@@ -39,6 +39,8 @@ export interface IInvoice extends Document {
     at: Date;
   }>;
   notes: string;
+  pdfFileName?: string;
+  pdfFileUrl?: string;
   createdBy: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -89,6 +91,8 @@ const InvoiceSchema = new Schema<IInvoice>(
       },
     ],
     notes: { type: String, default: "" },
+    pdfFileName: { type: String, default: "" },
+    pdfFileUrl: { type: String, default: "" },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
   },
   { timestamps: true }
